@@ -10,46 +10,73 @@ static final int STOCK_MAX = 10;
 static final int BORNE_SUP = 8;
 static final int BORNE_INF = 2;
 private int numero ;
-private int currentBike ;
-private ReentrantLock re;
+public boolean truckOnsite ;
+public boolean busy;
+private int numberOfBikes ;
      public Site (int numero){
      this.numero = numero ;
-     this.currentBike = STOCK_INIT;
-      this.re = new ReentrantLock();
+     this.numberOfBikes = STOCK_INIT;
+
 }
 
 
 public   synchronized void stocker(){
-     while(this.currentBike >= STOCK_MAX) {
+     while(this.numberOfBikes >= STOCK_MAX) {
          try {
-             System.out.println("===================Attente  no place available==================");
              wait();
+             System.out.println("Waiting no place ");
          } catch (InterruptedException e) {
              throw new RuntimeException(e);
          }
      }
-    this.currentBike++ ;
+    this.numberOfBikes++ ;
     notifyAll();
 }
 public  synchronized void deSotcker(){
-
-        while ( this.currentBike == 0){
+        while ( this.numberOfBikes == 0 ){
             try {
-                System.out.println("================Attente  no bike  available========================  " + Thread.currentThread().getName());
                 wait();
+                System.out.println("Waiting no bike ");
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
         }
-        this.currentBike--;
+        this.numberOfBikes--;
+
         notifyAll();;
 
 }
+    public synchronized int work(int numberOfBikesInTruck) {
+
+        if (numberOfBikes > Site.BORNE_SUP) {
+            int surplusBikes = getNumberOfBikes() - Site.STOCK_INIT;
+            numberOfBikesInTruck += surplusBikes;
+            numberOfBikes=numberOfBikes - surplusBikes;
+            System.out.println("[TRUCK] dropped " + surplusBikes + " to the site " + getNumero());
+        }
+
+        if (numberOfBikes < Site.BORNE_INF) {
+            int bikesToAdd = Site.STOCK_INIT - numberOfBikes;
+            if (bikesToAdd > numberOfBikesInTruck) {
+                numberOfBikes =numberOfBikes + numberOfBikesInTruck;
+                System.out.println("[TRUCK] dropped  " + numberOfBikesInTruck + " on site " + getNumero());
+            } else {
+                numberOfBikes=numberOfBikes+ bikesToAdd;
+                numberOfBikesInTruck -= bikesToAdd;
+                System.out.println("[TRUCK] has just loaded up on site   " + getNumero());
+            }
+        }
 
 
-     public int getCurrentBike() {
-          return currentBike;
+
+        return numberOfBikesInTruck;
+    }
+
+
+
+     public int getNumberOfBikes() {
+          return numberOfBikes;
      }
-     public void setCurrentBike(int bike){ this.currentBike = bike; }
+     public void setNumberOfBikes(int bike){ this.numberOfBikes = bike; }
      public int getNumero(){ return this.numero ;}
 }
